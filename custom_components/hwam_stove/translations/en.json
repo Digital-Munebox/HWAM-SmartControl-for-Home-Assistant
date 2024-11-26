@@ -1,1 +1,102 @@
-
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to HWAM stove",
+                "description": "Set up HWAM Smart Control integration",
+                "data": {
+                    "host": "IP address or hostname",
+                    "name": "Stove name"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "unknown": "Unexpected error"
+        },
+        "abort": {
+            "already_configured": "Device is already configured"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "HWAM Smart Control Options",
+                "data": {
+                    "update_interval": "Update interval (seconds)",
+                    "night_mode_enabled": "Enable night mode"
+                }
+            }
+        }
+    },
+    "services": {
+        "start_combustion": {
+            "name": "Start combustion",
+            "description": "Start the stove combustion process"
+        },
+        "set_burn_level": {
+            "name": "Set burn level",
+            "description": "Set the burn level of the stove",
+            "fields": {
+                "level": {
+                    "name": "Level",
+                    "description": "Burn level (0-5)"
+                }
+            }
+        },
+        "set_night_mode": {
+            "name": "Set night mode",
+            "description": "Configure night mode schedule",
+            "fields": {
+                "start_time": {
+                    "name": "Start time",
+                    "description": "Night mode start time"
+                },
+                "end_time": {
+                    "name": "End time",
+                    "description": "Night mode end time"
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "burn_level": {
+                "name": "Burn Level",
+                "state": {
+                    "0": "Economy",
+                    "1": "Low",
+                    "2": "Medium-low",
+                    "3": "Medium",
+                    "4": "Medium-high",
+                    "5": "Maximum"
+                }
+            },
+            "phase": {
+                "name": "Burn Phase",
+                "state": {
+                    "1": "Ignition",
+                    "2": "Starting",
+                    "3": "Burning",
+                    "4": "Embers",
+                    "5": "Standby"
+                }
+            }
+        },
+        "binary_sensor": {
+            "door_open": {
+                "name": "Door"
+            },
+            "maintenance_needed": {
+                "name": "Maintenance Needed"
+            },
+            "safety_alarm": {
+                "name": "Safety Alarm"
+            },
+            "refill_needed": {
+                "name": "Refill Needed"
+            }
+        }
+    }
+}
