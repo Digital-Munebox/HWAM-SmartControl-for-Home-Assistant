@@ -1,1 +1,102 @@
-
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connexion au poêle HWAM",
+                "description": "Configurer l'intégration HWAM Smart Control",
+                "data": {
+                    "host": "Adresse IP ou nom d'hôte",
+                    "name": "Nom du poêle"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Échec de connexion",
+            "invalid_auth": "Authentification invalide",
+            "unknown": "Erreur inattendue"
+        },
+        "abort": {
+            "already_configured": "L'appareil est déjà configuré"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Options HWAM Smart Control",
+                "data": {
+                    "update_interval": "Intervalle de mise à jour (secondes)",
+                    "night_mode_enabled": "Activer le mode nuit"
+                }
+            }
+        }
+    },
+    "services": {
+        "start_combustion": {
+            "name": "Démarrer la combustion",
+            "description": "Démarre le processus de combustion du poêle"
+        },
+        "set_burn_level": {
+            "name": "Définir le niveau de combustion",
+            "description": "Définit le niveau de combustion du poêle",
+            "fields": {
+                "level": {
+                    "name": "Niveau",
+                    "description": "Niveau de combustion (0-5)"
+                }
+            }
+        },
+        "set_night_mode": {
+            "name": "Configurer le mode nuit",
+            "description": "Configure les horaires du mode nuit",
+            "fields": {
+                "start_time": {
+                    "name": "Heure de début",
+                    "description": "Heure de début du mode nuit"
+                },
+                "end_time": {
+                    "name": "Heure de fin",
+                    "description": "Heure de fin du mode nuit"
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "burn_level": {
+                "name": "Niveau de combustion",
+                "state": {
+                    "0": "Économique",
+                    "1": "Faible",
+                    "2": "Moyen-bas",
+                    "3": "Moyen",
+                    "4": "Moyen-haut",
+                    "5": "Maximum"
+                }
+            },
+            "phase": {
+                "name": "Phase de combustion",
+                "state": {
+                    "1": "Allumage",
+                    "2": "Démarrage",
+                    "3": "Combustion",
+                    "4": "Braises",
+                    "5": "Veille"
+                }
+            }
+        },
+        "binary_sensor": {
+            "door_open": {
+                "name": "Porte"
+            },
+            "maintenance_needed": {
+                "name": "Maintenance nécessaire"
+            },
+            "safety_alarm": {
+                "name": "Alarme de sécurité"
+            },
+            "refill_needed": {
+                "name": "Rechargement nécessaire"
+            }
+        }
+    }
+}
