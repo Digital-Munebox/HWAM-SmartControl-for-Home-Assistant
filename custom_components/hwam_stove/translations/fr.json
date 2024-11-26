@@ -2,78 +2,74 @@
     "config": {
         "step": {
             "user": {
-                "title": "Connexion au poêle HWAM",
-                "description": "Configurer l'intégration HWAM Smart Control",
+                "title": "Configuration du poêle HWAM",
+                "description": "Configurez votre poêle HWAM Smart Control",
                 "data": {
                     "host": "Adresse IP ou nom d'hôte",
-                    "name": "Nom du poêle"
+                    "name": "Nom du poêle",
+                    "username": "Nom d'utilisateur (optionnel)",
+                    "password": "Mot de passe (optionnel)",
+                    "use_ssl": "Utiliser SSL"
                 }
             }
         },
         "error": {
-            "cannot_connect": "Échec de connexion",
+            "cannot_connect": "Impossible de se connecter au poêle",
             "invalid_auth": "Authentification invalide",
+            "invalid_host": "Adresse IP ou nom d'hôte invalide",
             "unknown": "Erreur inattendue"
         },
         "abort": {
-            "already_configured": "L'appareil est déjà configuré"
+            "already_configured": "Ce poêle est déjà configuré"
         }
     },
     "options": {
         "step": {
             "init": {
                 "title": "Options HWAM Smart Control",
+                "description": "Configurez les options avancées",
                 "data": {
                     "update_interval": "Intervalle de mise à jour (secondes)",
-                    "night_mode_enabled": "Activer le mode nuit"
-                }
-            }
-        }
-    },
-    "services": {
-        "start_combustion": {
-            "name": "Démarrer la combustion",
-            "description": "Démarre le processus de combustion du poêle"
-        },
-        "set_burn_level": {
-            "name": "Définir le niveau de combustion",
-            "description": "Définit le niveau de combustion du poêle",
-            "fields": {
-                "level": {
-                    "name": "Niveau",
-                    "description": "Niveau de combustion (0-5)"
-                }
-            }
-        },
-        "set_night_mode": {
-            "name": "Configurer le mode nuit",
-            "description": "Configure les horaires du mode nuit",
-            "fields": {
-                "start_time": {
-                    "name": "Heure de début",
-                    "description": "Heure de début du mode nuit"
-                },
-                "end_time": {
-                    "name": "Heure de fin",
-                    "description": "Heure de fin du mode nuit"
+                    "night_mode_enabled": "Activer le mode nuit",
+                    "enable_predictions": "Activer les prédictions",
+                    "notification_level": "Niveau de notification",
+                    "maintenance_threshold": "Seuil de maintenance (heures)"
                 }
             }
         }
     },
     "entity": {
-        "sensor": {
+        "number": {
             "burn_level": {
                 "name": "Niveau de combustion",
-                "state": {
-                    "0": "Économique",
-                    "1": "Faible",
-                    "2": "Moyen-bas",
-                    "3": "Moyen",
-                    "4": "Moyen-haut",
-                    "5": "Maximum"
+                "state_attributes": {
+                    "niveau_recommande": "Niveau recommandé",
+                    "efficacite": "Score d'efficacité",
+                    "tendance_temperature": "Tendance température",
+                    "phase_actuelle": "Phase actuelle",
+                    "temps_avant_rechargement": "Temps avant rechargement"
+                }
+            }
+        },
+        "sensor": {
+            "stove_temperature": {
+                "name": "Température du poêle",
+                "state_attributes": {
+                    "trend": "Tendance",
+                    "min_24h": "Minimum 24h",
+                    "max_24h": "Maximum 24h"
                 }
             },
-            "phase": {
+            "efficiency_score": {
+                "name": "Score d'efficacité",
+                "state": {
+                    "optimal": "Optimal",
+                    "good": "Bon",
+                    "moderate": "Moyen",
+                    "poor": "Faible"
+                }
+            },
+            "burn_phase": {
                 "name": "Phase de combustion",
                 "state": {
                     "1": "Allumage",
@@ -85,18 +81,68 @@
             }
         },
         "binary_sensor": {
-            "door_open": {
-                "name": "Porte"
+            "optimal_performance": {
+                "name": "Performance optimale",
+                "state_attributes": {
+                    "efficiency_score": "Score d'efficacité",
+                    "temperature_stability": "Stabilité température",
+                    "oxygen_level_optimal": "Niveau d'oxygène optimal"
+                }
             },
             "maintenance_needed": {
-                "name": "Maintenance nécessaire"
-            },
-            "safety_alarm": {
-                "name": "Alarme de sécurité"
-            },
-            "refill_needed": {
-                "name": "Rechargement nécessaire"
+                "name": "Maintenance nécessaire",
+                "state_attributes": {
+                    "last_service": "Dernière maintenance",
+                    "hours_since_service": "Heures depuis maintenance",
+                    "alarm_details": "Détails des alarmes"
+                }
             }
         }
+    },
+    "services": {
+        "start_combustion": {
+            "name": "Démarrer la combustion",
+            "description": "Démarre le processus de combustion"
+        },
+        "set_burn_level": {
+            "name": "Définir niveau de combustion",
+            "description": "Définit le niveau de combustion du poêle",
+            "fields": {
+                "level": {
+                    "name": "Niveau",
+                    "description": "Niveau de combustion (0-5)"
+                }
+            }
+        },
+        "set_night_mode": {
+            "name": "Configuration mode nuit",
+            "description": "Configure les horaires du mode nuit",
+            "fields": {
+                "start_time": {
+                    "name": "Heure début",
+                    "description": "Heure de début du mode nuit"
+                },
+                "end_time": {
+                    "name": "Heure fin",
+                    "description": "Heure de fin du mode nuit"
+                }
+            }
+        },
+        "optimize_combustion": {
+            "name": "Optimiser la combustion",
+            "description": "Optimise automatiquement les paramètres de combustion",
+            "fields": {
+                "target_temperature": {
+                    "name": "Température cible",
+                    "description": "Température ambiante souhaitée"
+                }
+            }
+        }
+    },
+    "notifications": {
+        "maintenance_due": "Une maintenance de votre poêle HWAM est recommandée",
+        "optimal_level_suggestion": "Un ajustement du niveau de combustion est recommandé pour optimiser les performances",
+        "high_temperature_warning": "Attention: Température élevée détectée",
+        "refill_soon": "Prévoir un rechargement en bois prochainement"
     }
 }
