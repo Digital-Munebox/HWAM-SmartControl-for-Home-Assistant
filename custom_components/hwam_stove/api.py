@@ -2,52 +2,78 @@
 from datetime import datetime
 import logging
 from typing import Optional
+import ssl
 
 import aiohttp
 import async_timeout
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from .const import (
     ENDPOINT_GET_STOVE_DATA,
     ENDPOINT_SET_BURN_LEVEL,
     ENDPOINT_START,
     ENDPOINT_SET_NIGHT_TIME,
+    DEFAULT_TIMEOUT,
+    MAX_RETRIES,
 )
 from .models import StoveData
 
 _LOGGER = logging.getLogger(__name__)
 
 class HWAMApiError(Exception):
-    """Exception for HWAM API errors."""
+    """Exception de base pour les erreurs API HWAM."""
     pass
 
 class CannotConnect(HWAMApiError):
-    """Error to indicate we cannot connect."""
+    """Erreur de connexion."""
     pass
 
 class InvalidResponse(HWAMApiError):
-    """Error to indicate invalid response from API."""
+    """Réponse API invalide."""
+    pass
+
+class InvalidAuth(HWAMApiError):
+    """Erreur d'authentification."""
     pass
 
 class HWAMApi:
-    """HWAM Smart Control API client."""
+    """Client API HWAM Smart Control."""
 
     def __init__(
         self, 
         host: str, 
         session: Optional[aiohttp.ClientSession] = None,
-        request_timeout: int = 10
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        use_ssl: bool = False,
+        request_timeout: int = DEFAULT_TIMEOUT,
     ) -> None:
         """Initialize the API client."""
         self._host = host
         self._session = session
         self._request_timeout = request_timeout
-        self._base_url = f"http://{host}"
+        self._username = username
+        self._password = password
         self._close_session = False
+        self._ssl_context = ssl.create_default_context() if use_ssl else False
+        self._base_url = f"{'https' if use_ssl else 'http'}://{host}"
+        self._cached_data: Optional[StoveData] = None
+        self._last_update: Optional[datetime] = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get aiohttp session."""
         if self._session is None:
-            self._session = aiohttp.ClientSession()
+            auth = None
+            if self._username and self._password:
+                auth = aiohttp.BasicAuth(self._username, self._password)
+                
+            self._session = aiohttp.ClientSession(
+                auth=auth,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "HWAM-HA-Integration/1.0",
+                }
+            )
             self._close_session = True
         return self._session
 
@@ -58,20 +84,23 @@ class HWAMApi:
         params: Optional[dict] = None, 
         data: Optional[dict] = None
     ) -> dict:
-        """Make request to API."""
+        """Make request to API with retry logic."""
         session = await self._get_session()
         url = f"{self._base_url}{endpoint}"
 
         try:
             async with async_timeout.timeout(self._request_timeout):
-                _LOGGER.debug("Making request to %s", url)
+                _LOGGER.debug("Making %s request to %s", method, url)
                 async with session.request(
                     method, 
                     url, 
                     params=params, 
                     json=data,
-                    headers={"Accept": "application/json"}
+                    ssl=self._ssl_context,
                 ) as response:
+                    if response.status == 401:
+                        raise InvalidAuth("Authentication invalide")
+                    
                     if response.status != 200:
                         raise InvalidResponse(
                             f"Invalid response from API: {response.status}"
@@ -85,19 +114,32 @@ class HWAMApi:
             raise CannotConnect(f"Error connecting to API: {err}") from err
         except asyncio.TimeoutError as err:
             raise CannotConnect(f"Timeout connecting to API: {err}") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error: %s", err)
+            raise
 
-    async def close(self) -> None:
-        """Close open client session."""
-        if self._session and self._close_session:
-            await self._session.close()
-
+    @retry(
+        stop=stop_after_attempt(MAX_RETRIES),
+        wait=wait_exponential(multiplier=1, min=4, max=10)
+    )
     async def get_stove_data(self) -> StoveData:
-        """Get current stove data."""
+        """Get current stove data with retry logic."""
         try:
             data = await self._request("GET", ENDPOINT_GET_STOVE_DATA)
-            return StoveData.from_dict(data)
+            stove_data = StoveData.from_dict(data)
+            
+            # Mise en cache des données
+            self._cached_data = stove_data
+            self._last_update = datetime.now()
+            
+            return stove_data
+            
         except Exception as err:
             _LOGGER.error("Error getting stove data: %s", err)
+            # Utiliser les données en cache si disponibles
+            if self._cached_data is not None:
+                _LOGGER.warning("Using cached data from %s", self._last_update)
+                return self._cached_data
             raise
 
     async def set_burn_level(self, level: int) -> bool:
@@ -152,5 +194,23 @@ class HWAMApi:
         try:
             await self.get_stove_data()
             return True
-        except Exception:
+        except Exception as err:
+            _LOGGER.error("Connection test failed: %s", err)
             return False
+
+    async def close(self) -> None:
+        """Close open client session."""
+        if self._session and self._close_session:
+            await self._session.close()
+
+    @property
+    def cache_age(self) -> Optional[timedelta]:
+        """Get age of cached data."""
+        if self._last_update is None:
+            return None
+        return datetime.now() - self._last_update
+
+    def clear_cache(self) -> None:
+        """Clear cached data."""
+        self._cached_data = None
+        self._last_update = None
