@@ -2,78 +2,74 @@
     "config": {
         "step": {
             "user": {
-                "title": "Connect to HWAM stove",
-                "description": "Set up HWAM Smart Control integration",
+                "title": "HWAM Stove Configuration",
+                "description": "Set up your HWAM Smart Control stove",
                 "data": {
                     "host": "IP address or hostname",
-                    "name": "Stove name"
+                    "name": "Stove name",
+                    "username": "Username (optional)",
+                    "password": "Password (optional)",
+                    "use_ssl": "Use SSL"
                 }
             }
         },
         "error": {
-            "cannot_connect": "Failed to connect",
+            "cannot_connect": "Failed to connect to stove",
             "invalid_auth": "Invalid authentication",
+            "invalid_host": "Invalid IP address or hostname",
             "unknown": "Unexpected error"
         },
         "abort": {
-            "already_configured": "Device is already configured"
+            "already_configured": "This stove is already configured"
         }
     },
     "options": {
         "step": {
             "init": {
                 "title": "HWAM Smart Control Options",
+                "description": "Configure advanced options",
                 "data": {
                     "update_interval": "Update interval (seconds)",
-                    "night_mode_enabled": "Enable night mode"
-                }
-            }
-        }
-    },
-    "services": {
-        "start_combustion": {
-            "name": "Start combustion",
-            "description": "Start the stove combustion process"
-        },
-        "set_burn_level": {
-            "name": "Set burn level",
-            "description": "Set the burn level of the stove",
-            "fields": {
-                "level": {
-                    "name": "Level",
-                    "description": "Burn level (0-5)"
-                }
-            }
-        },
-        "set_night_mode": {
-            "name": "Set night mode",
-            "description": "Configure night mode schedule",
-            "fields": {
-                "start_time": {
-                    "name": "Start time",
-                    "description": "Night mode start time"
-                },
-                "end_time": {
-                    "name": "End time",
-                    "description": "Night mode end time"
+                    "night_mode_enabled": "Enable night mode",
+                    "enable_predictions": "Enable predictions",
+                    "notification_level": "Notification level",
+                    "maintenance_threshold": "Maintenance threshold (hours)"
                 }
             }
         }
     },
     "entity": {
-        "sensor": {
+        "number": {
             "burn_level": {
                 "name": "Burn Level",
-                "state": {
-                    "0": "Economy",
-                    "1": "Low",
-                    "2": "Medium-low",
-                    "3": "Medium",
-                    "4": "Medium-high",
-                    "5": "Maximum"
+                "state_attributes": {
+                    "recommended_level": "Recommended level",
+                    "efficiency": "Efficiency score",
+                    "temperature_trend": "Temperature trend",
+                    "current_phase": "Current phase",
+                    "time_to_refill": "Time to refill"
+                }
+            }
+        },
+        "sensor": {
+            "stove_temperature": {
+                "name": "Stove Temperature",
+                "state_attributes": {
+                    "trend": "Trend",
+                    "min_24h": "24h Minimum",
+                    "max_24h": "24h Maximum"
                 }
             },
-            "phase": {
+            "efficiency_score": {
+                "name": "Efficiency Score",
+                "state": {
+                    "optimal": "Optimal",
+                    "good": "Good",
+                    "moderate": "Moderate",
+                    "poor": "Poor"
+                }
+            },
+            "burn_phase": {
                 "name": "Burn Phase",
                 "state": {
                     "1": "Ignition",
@@ -85,18 +81,68 @@
             }
         },
         "binary_sensor": {
-            "door_open": {
-                "name": "Door"
+            "optimal_performance": {
+                "name": "Optimal Performance",
+                "state_attributes": {
+                    "efficiency_score": "Efficiency score",
+                    "temperature_stability": "Temperature stability",
+                    "oxygen_level_optimal": "Optimal oxygen level"
+                }
             },
             "maintenance_needed": {
-                "name": "Maintenance Needed"
-            },
-            "safety_alarm": {
-                "name": "Safety Alarm"
-            },
-            "refill_needed": {
-                "name": "Refill Needed"
+                "name": "Maintenance Needed",
+                "state_attributes": {
+                    "last_service": "Last service",
+                    "hours_since_service": "Hours since service",
+                    "alarm_details": "Alarm details"
+                }
             }
         }
+    },
+    "services": {
+        "start_combustion": {
+            "name": "Start Combustion",
+            "description": "Start the combustion process"
+        },
+        "set_burn_level": {
+            "name": "Set Burn Level",
+            "description": "Set the stove burn level",
+            "fields": {
+                "level": {
+                    "name": "Level",
+                    "description": "Burn level (0-5)"
+                }
+            }
+        },
+        "set_night_mode": {
+            "name": "Set Night Mode",
+            "description": "Configure night mode schedule",
+            "fields": {
+                "start_time": {
+                    "name": "Start time",
+                    "description": "Night mode start time"
+                },
+                "end_time": {
+                    "name": "End time",
+                    "description": "Night mode end time"
+                }
+            }
+        },
+        "optimize_combustion": {
+            "name": "Optimize Combustion",
+            "description": "Automatically optimize combustion parameters",
+            "fields": {
+                "target_temperature": {
+                    "name": "Target temperature",
+                    "description": "Desired room temperature"
+                }
+            }
+        }
+    },
+    "notifications": {
+        "maintenance_due": "HWAM stove maintenance is recommended",
+        "optimal_level_suggestion": "A burn level adjustment is recommended to optimize performance",
+        "high_temperature_warning": "Warning: High temperature detected",
+        "refill_soon": "Wood refill will be needed soon"
     }
 }
