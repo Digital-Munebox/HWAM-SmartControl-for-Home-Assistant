@@ -3,30 +3,46 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Cette intégration permet de contrôler et surveiller les poêles à bois HWAM équipés du système Smart Control via Home Assistant.
+Cette intégration Home Assistant permet de superviser et de contrôler les poêles à bois HWAM équipés du système Smart Control (IHS).
 
 ## Fonctionnalités
 
-- 🌡️ Surveillance des températures (poêle et pièce)
-- 🔥 Contrôle du niveau de combustion (0-5)
-- ⏰ Programmation du mode nuit
-- ⚠️ Gestion des alarmes et notifications
-- 📊 Historique des températures et niveaux d'oxygène
-- 🚪 Détection d'ouverture de porte
-- 🌬️ Contrôle des valves d'air
+### Supervision en temps réel
+- 🌡️ Températures
+  - Température du poêle
+  - Température ambiante
+  - Historique sur 24h
+- 💨 Niveau d'oxygène
+- 🔥 Phase de combustion
+- 🚪 État de la porte
+- ⚡ Mode de fonctionnement
+
+### Contrôles disponibles
+- 🎚️ Niveau de combustion (0-5)
+- ⏰ Mode nuit (programmation)
+- ▶️ Démarrage de la combustion
+
+### Alertes et notifications
+- ⚠️ Alarmes de maintenance
+- 🚨 Alarmes de sécurité
+- 🪵 Alertes de rechargement
+- 🚪 Détection porte ouverte
+
+### Statistiques
+- 📊 Historique des températures (24h)
+- 📈 Tendances de combustion
+- 🔍 Suivi de l'état du système
 
 ## Installation
 
 ### Via HACS (recommandé)
-
 1. Ouvrir HACS dans Home Assistant
-2. Cliquer sur les trois points en haut à droite et sélectionner "Dépôts personnalisés"
-3. Ajouter ce dépôt : `https://github.com/Digital-Munebox/hwam_stove`
+2. Ajouter ce dépôt comme "Dépôt personnalisé"
+3. Rechercher "HWAM Smart Control"
 4. Cliquer sur "Télécharger"
 5. Redémarrer Home Assistant
 
 ### Installation manuelle
-
 1. Copier le dossier `custom_components/hwam_stove` dans votre dossier `custom_components`
 2. Redémarrer Home Assistant
 3. Ajouter l'intégration via l'interface
@@ -36,30 +52,36 @@ Cette intégration permet de contrôler et surveiller les poêles à bois HWAM �
 1. Dans Home Assistant, aller dans Configuration > Intégrations
 2. Cliquer sur le bouton "+" pour ajouter une intégration
 3. Rechercher "HWAM Smart Control"
-4. Suivre les étapes de configuration :
-   - Entrer l'adresse IP ou le nom d'hôte de votre poêle
-   - Donner un nom à votre poêle
+4. Renseigner :
+   - L'adresse IP ou le nom d'hôte du poêle
+   - Un nom personnalisé (optionnel)
 
 ## Entités créées
 
-### Capteurs
-- Température du poêle (°C)
-- Température ambiante (°C)
-- Niveau d'oxygène (%)
-- Phase de combustion
-- Mode de fonctionnement
-- Positions des valves (%)
+### Capteurs (sensor)
+| Entité | Description | Unité |
+|--------|-------------|-------|
+| `sensor.hwam_stove_temperature` | Température du poêle | °C |
+| `sensor.hwam_room_temperature` | Température ambiante | °C |
+| `sensor.hwam_oxygen_level` | Niveau d'oxygène | % |
+| `sensor.hwam_burn_phase` | Phase de combustion | - |
+| `sensor.hwam_valve1` | Position valve 1 | % |
+| `sensor.hwam_valve2` | Position valve 2 | % |
+| `sensor.hwam_valve3` | Position valve 3 | % |
 
-### Capteurs binaires
-- État de la porte (ouvert/fermé)
-- Alarme de maintenance
-- Alarme de sécurité
-- Besoin de rechargement
+### Capteurs binaires (binary_sensor)
+| Entité | Description |
+|--------|-------------|
+| `binary_sensor.hwam_door` | État de la porte |
+| `binary_sensor.hwam_maintenance_needed` | Besoin de maintenance |
+| `binary_sensor.hwam_safety_alarm` | Alarme de sécurité |
+| `binary_sensor.hwam_refill_needed` | Besoin de rechargement |
 
 ### Contrôles
-- Niveau de combustion (0-5)
-- Mode nuit (on/off)
-- Programmation des horaires
+| Entité | Description |
+|--------|-------------|
+| `number.hwam_burn_level` | Niveau de combustion (0-5) |
+| `switch.hwam_night_mode` | Mode nuit |
 
 ## Services disponibles
 
@@ -68,59 +90,74 @@ Démarre le processus de combustion.
 
 ### `hwam_stove.set_burn_level`
 Définit le niveau de combustion.
-- `level`: Niveau de combustion (0-5)
+```yaml
+service: hwam_stove.set_burn_level
+data:
+  level: 3  # Valeur entre 0 et 5
+```
 
 ### `hwam_stove.set_night_mode`
 Configure les horaires du mode nuit.
-- `start_time`: Heure de début
-- `end_time`: Heure de fin
+```yaml
+service: hwam_stove.set_night_mode
+data:
+  start_time: "22:00"
+  end_time: "06:00"
+```
 
 ## Exemples d'automatisations
 
+### Activation du mode nuit
 ```yaml
-# Démarrage automatique le matin
 automation:
-  - alias: "Démarrage poêle matin"
-    trigger:
-      - platform: time
-        at: "06:00:00"
-    action:
-      - service: hwam_stove.start_combustion
-      - service: hwam_stove.set_burn_level
-        data:
-          level: 3
-
-# Activation mode nuit
-automation:
-  - alias: "Mode nuit poêle"
+  - alias: "Mode nuit poêle HWAM"
     trigger:
       - platform: time
         at: "22:00:00"
     action:
-      - service: hwam_stove.set_night_mode
-        data:
-          start_time: "22:00"
-          end_time: "06:00"
+      - service: switch.turn_on
+        target:
+          entity_id: switch.hwam_night_mode
 ```
+
+### Notification de température élevée
+```yaml
+automation:
+  - alias: "Alerte température poêle"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.hwam_stove_temperature
+        above: 500
+    action:
+      - service: notify.notify
+        data:
+          title: "HWAM - Température élevée"
+          message: "La température du poêle est très élevée!"
+```
+
+## Notes importantes
+
+- Cette intégration respecte le fonctionnement natif du système IHS (Intelligent Heat System)
+- L'algorithme interne du poêle gère automatiquement les valves d'air pour une combustion optimale
+- Le contrôle du niveau de combustion (0-5) permet d'ajuster la puissance globale souhaitée
+- Les données sont mises à jour toutes les 30 secondes par défaut
 
 ## Dépannage
 
 ### Le poêle n'est pas détecté
+1. Vérifier que le poêle est connecté au réseau
+2. Vérifier l'adresse IP
+3. Tester la connexion avec `ping [adresse_ip]`
 
-1. Vérifier que le poêle est bien connecté au réseau
-2. Vérifier que l'adresse IP est correcte
-3. Vérifier que le port n'est pas bloqué
+### Erreurs de connexion
+1. Vérifier que le poêle est allumé
+2. Redémarrer le poêle si nécessaire
+3. Vérifier les logs Home Assistant
 
-### Les données ne se mettent pas à jour
+## Support
 
-1. Vérifier la connexion réseau
-2. Augmenter l'intervalle de mise à jour dans les options
-3. Redémarrer l'intégration
-
-## Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+- Ouvrir une issue sur GitHub
+- Documentation HWAM: [lien]
 
 ## Licence
-
 Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
