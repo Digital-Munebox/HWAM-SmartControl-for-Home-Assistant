@@ -23,35 +23,56 @@ class HWAMEntity(CoordinatorEntity[HWAMDataCoordinator], Entity):
         self, 
         coordinator: HWAMDataCoordinator, 
         entry_id: str,
-        entity_description = None,
+        device_id: str,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
-        
-        # Configuration entry ID
         self._entry_id = entry_id
-        
-        # Device unique identifiers
-        self._device_unique_id = f"{DOMAIN}_{entry_id}"
-        
-        # Entity unique ID based on the device ID and entity type
-        if entity_description is not None:
-            self._attr_unique_id = f"{self._device_unique_id}_{entity_description.key}"
-        
-        # Device info
+        self._device_id = device_id
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._device_unique_id)},
+            identifiers={(DOMAIN, device_id)},
             name=coordinator._name,
             manufacturer=MANUFACTURER,
             model=MODEL,
             sw_version=self.get_firmware_version(),
             suggested_area="Living Room",
-            via_device=(DOMAIN, self._device_unique_id),
         )
 
-    @property
-    def unique_id(self) -> str:
-        """Return a unique ID to use for this entity."""
-        return self._attr_unique_id
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self.async_write_ha_state()
 
-    # ... reste du code inchangé ...
+    @property
+    def stove_data(self) -> StoveData:
+        """Get current stove data."""
+        return self.coordinator.data
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return (
+            self.coordinator.last_update_success 
+            and super().available
+        )
+
+    def get_firmware_version(self) -> str:
+        """Get firmware version."""
+        try:
+            return self.coordinator.data.firmware_version
+        except AttributeError:
+            return "Unknown"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the state attributes."""
+        try:
+            return {
+                "last_update_success": self.coordinator.last_update_success,
+                "last_exception": str(self.coordinator.last_exception) if self.coordinator.last_exception else None,
+                "algorithm": self.coordinator.data.algorithm,
+                "wifi_version": self.coordinator.data.wifi_version,
+                "remote_version": self.coordinator.data.remote_version,
+            }
+        except AttributeError:
+            return {}
