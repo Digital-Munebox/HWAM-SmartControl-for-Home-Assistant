@@ -1,1 +1,10 @@
-
+{
+  "name": "HWAM Smart Control",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["binary_sensor", "sensor", "number", "switch"],
+  "homeassistant": "2024.1.0",
+  "iot_class": "Local Polling",
+  "zip_release": false,
+  "filename": "hwam_stove.zip"
+}
