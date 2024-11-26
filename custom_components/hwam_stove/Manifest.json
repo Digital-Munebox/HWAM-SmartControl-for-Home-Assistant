@@ -1,0 +1,14 @@
+{
+  "domain": "hwam_stove",
+  "name": "HWAM Smart Control",
+  "codeowners": ["@Digital-Munebox"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Digital-Munebox/hwam_stove",
+  "homekit": {},
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/Digital-Munebox/hwam_stove/issues",
+  "requirements": ["aiodns==3.1.1"],
+  "version": "1.0.0",
+  "zeroconf": ["_hwam._tcp.local."]
+}
