@@ -1,86 +1,198 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { TrendingUp, Timer, CircleSlash } from 'lucide-react';
+import { LitElement, html, css } from 'lit-element';
+import { HomeAssistant } from 'custom-card-helpers';
+import Chart from 'chart.js/auto';
 
-const data = [
-  { time: '12:00', temp: 245, room: 21 },
-  { time: '12:30', temp: 256, room: 22 },
-  { time: '13:00', temp: 238, room: 22 },
-  { time: '13:30', temp: 242, room: 21 },
-  { time: '14:00', temp: 248, room: 21 },
-];
+class HWAMStatsCard extends LitElement {
+  static get properties() {
+    return {
+      hass: { type: Object },
+      config: { type: Object },
+      _chart: { type: Object }
+    };
+  }
 
-export default function HWAMStatsCard() {
-  return (
-    <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-xl mx-auto">
-      <h2 className="text-xl font-semibold mb-4">Statistiques HWAM</h2>
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        padding: 16px;
+      }
+      .stats-card {
+        background: var(--ha-card-background, var(--card-background-color, white));
+        border-radius: var(--ha-card-border-radius, 4px);
+        box-shadow: var(--ha-card-box-shadow, 0 2px 2px 0 rgba(0, 0, 0, 0.14));
+      }
+      .header {
+        padding: 16px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .chart-container {
+        height: 200px;
+        position: relative;
+        margin-bottom: 16px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        padding: 16px;
+      }
+      .stat-box {
+        background: var(--secondary-background-color);
+        padding: 12px;
+        border-radius: 4px;
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 20px;
+        font-weight: bold;
+        margin: 8px 0;
+      }
+      .stat-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .details {
+        padding: 16px;
+        border-top: 1px solid var(--divider-color);
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+      }
+    `;
+  }
 
-      {/* Temperature Chart */}
-      <div className="mb-6">
-        <div className="mb-4">
-          <LineChart width={500} height={200} data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="temp" 
-              name="Température poêle" 
-              stroke="#f97316" 
-            />
-            <Line 
-              type="monotone" 
-              dataKey="room" 
-              name="Température pièce" 
-              stroke="#3b82f6" 
-            />
-          </LineChart>
-        </div>
-      </div>
+  firstUpdated() {
+    this._createChart();
+  }
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <TrendingUp className="h-5 w-5 text-green-500 mr-2" />
-            <span className="text-sm font-medium">Efficacité</span>
-          </div>
-          <span className="text-xl font-bold">92%</span>
+  updated(changedProps) {
+    if (changedProps.has('hass')) {
+      this._updateChart();
+    }
+  }
+
+  _createChart() {
+    const ctx = this.shadowRoot.querySelector('canvas').getContext('2d');
+    
+    this._chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Température poêle',
+            borderColor: 'rgb(255, 99, 132)',
+            data: []
+          },
+          {
+            label: 'Température pièce',
+            borderColor: 'rgb(54, 162, 235)',
+            data: []
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  _updateChart() {
+    if (!this._chart || !this.hass || !this.config) return;
+
+    const stoveHistory = this.hass.states[this.config.stove_temperature].attributes.history || [];
+    const roomHistory = this.hass.states[this.config.room_temperature].attributes.history || [];
+
+    this._chart.data.labels = stoveHistory.map(h => new Date(h.time).toLocaleTimeString());
+    this._chart.data.datasets[0].data = stoveHistory.map(h => h.value);
+    this._chart.data.datasets[1].data = roomHistory.map(h => h.value);
+    this._chart.update();
+  }
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+
+    const stoveTemp = this.hass.states[this.config.stove_temperature];
+    const roomTemp = this.hass.states[this.config.room_temperature];
+    const efficiency = this.hass.states[this.config.efficiency_score];
+    const burnTime = this.hass.states[this.config.burn_time];
+    const doorCount = this.hass.states[this.config.door_count];
+
+    return html`
+      <ha-card class="stats-card">
+        <div class="header">
+          Statistiques HWAM
         </div>
         
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <Timer className="h-5 w-5 text-blue-500 mr-2" />
-            <span className="text-sm font-medium">Temps actif</span>
-          </div>
-          <span className="text-xl font-bold">4h30</span>
+        <div class="chart-container">
+          <canvas></canvas>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center mb-2">
-            <CircleSlash className="h-5 w-5 text-orange-500 mr-2" />
-            <span className="text-sm font-medium">Ouvertures</span>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Efficacité</div>
+            <div class="stat-value">${efficiency ? efficiency.state : 'N/A'}%</div>
           </div>
-          <span className="text-xl font-bold">3</span>
+          <div class="stat-box">
+            <div class="stat-label">Temps de chauffe</div>
+            <div class="stat-value">${burnTime ? burnTime.state : 'N/A'}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Ouvertures porte</div>
+            <div class="stat-value">${doorCount ? doorCount.state : '0'}</div>
+          </div>
         </div>
-      </div>
 
-      {/* Details List */}
-      <div className="mt-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Température max (24h)</span>
-          <span className="font-medium">320°C</span>
+        <div class="details">
+          <div class="detail-row">
+            <span>Température max (24h)</span>
+            <span>${stoveTemp ? stoveTemp.attributes.max_24h : 'N/A'}°C</span>
+          </div>
+          <div class="detail-row">
+            <span>Température min (24h)</span>
+            <span>${stoveTemp ? stoveTemp.attributes.min_24h : 'N/A'}°C</span>
+          </div>
+          <div class="detail-row">
+            <span>Température moyenne pièce</span>
+            <span>${roomTemp ? roomTemp.attributes.average : 'N/A'}°C</span>
+          </div>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Température min (24h)</span>
-          <span className="font-medium">180°C</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Moyenne O₂</span>
-          <span className="font-medium">20%</span>
-        </div>
-      </div>
-    </div>
-  );
+      </ha-card>
+    `;
+  }
+
+  setConfig(config) {
+    if (!config.stove_temperature) throw new Error('Définir stove_temperature');
+    if (!config.room_temperature) throw new Error('Définir room_temperature');
+    if (!config.efficiency_score) throw new Error('Définir efficiency_score');
+    this.config = config;
+  }
+
+  getCardSize() {
+    return 4;
+  }
 }
+
+customElements.define('hwam-stats-card', HWAMStatsCard);
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: 'hwam-stats-card',
+  name: 'HWAM Statistics Card',
+  description: 'Carte de statistiques pour le poêle HWAM'
+});
