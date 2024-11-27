@@ -1,0 +1,54 @@
+name: HACS Validation
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  validate:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - name: HACS validation
+        uses: "hacs/action@main"
+        with:
+          category: "integration"
+
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8
+      - name: Run style checks
+        run: |
+          black .
+          flake8 .
+
+  tests:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_test.txt
+      - name: Run tests
+        run: |
+          pytest \
+            --cov=custom_components.hwam_stove \
+            --cov-report=xml \
+            -o console_output_style=count \
+            tests
